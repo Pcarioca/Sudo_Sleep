@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: sudosleep-postgres
+    environment:
+      POSTGRES_DB: sudosleep
+      POSTGRES_USER: sudosleep
+      POSTGRES_PASSWORD: sudosleep
+    ports:
+      - "5432:5432"
+    volumes:
+      - sudosleep-pgdata:/var/lib/postgresql/data
+
+volumes:
+  sudosleep-pgdata:
