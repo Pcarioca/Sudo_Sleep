@@ -1,0 +1,75 @@
+### Fresh database: ids below assume the first user/semester/subject/requirements are 1, 2, ...
+
+### 1. Create a user
+POST http://localhost:8080/api/users
+Content-Type: application/json
+
+{ "email": "adi@example.com", "displayName": "Adi" }
+
+### 2. Create a semester (startDate must be a Monday)
+POST http://localhost:8080/api/users/1/semesters
+Content-Type: application/json
+
+{ "name": "2026/27 Sem 1", "startDate": "2026-10-05", "weeksCount": 14 }
+
+### 3. Create a subject with its required activities
+POST http://localhost:8080/api/semesters/1/subjects
+Content-Type: application/json
+
+{
+  "name": "Mobile Systems and Applications",
+  "colorHex": "#0288D1",
+  "requirements": [
+    { "activityType": "LECTURE" },
+    { "activityType": "LABORATORY" },
+    { "activityType": "CUSTOM", "customTypeName": "Project" }
+  ]
+}
+
+### 4. Unscheduled activities (the banner)
+GET http://localhost:8080/api/semesters/1/requirements/unscheduled
+
+### 5. Schedule the lecture: Monday 08-10, weeks 1-10
+POST http://localhost:8080/api/requirements/1/timetable-entries
+Content-Type: application/json
+
+{ "dayOfWeek": 1, "startTime": "08:00", "endTime": "10:00", "weekFrom": 1, "weekTo": 10, "room": "A101", "teacher": "Prof. Turing" }
+
+### 6. Laboratory on odd weeks, Monday 10-12
+POST http://localhost:8080/api/requirements/2/timetable-entries
+Content-Type: application/json
+
+{ "dayOfWeek": 1, "startTime": "10:00", "endTime": "12:00", "weekParity": "ODD", "room": "Lab 302" }
+
+### 7. Overlaps the lecture in weeks 1-10 -> 409 with "conflicts"
+POST http://localhost:8080/api/requirements/3/timetable-entries
+Content-Type: application/json
+
+{ "dayOfWeek": 1, "startTime": "09:00", "endTime": "11:00" }
+
+### 8. Same request, forced
+POST http://localhost:8080/api/requirements/3/timetable-entries?force=true
+Content-Type: application/json
+
+{ "dayOfWeek": 1, "startTime": "09:00", "endTime": "11:00" }
+
+### 9. What happens in week 2 (odd lab is hidden)
+GET http://localhost:8080/api/semesters/1/timetable?week=2
+
+### 10. Grades and averages
+POST http://localhost:8080/api/subjects/1/grades
+Content-Type: application/json
+
+{ "score": 9.5, "weight": 1 }
+
+###
+POST http://localhost:8080/api/subjects/1/grades
+Content-Type: application/json
+
+{ "score": 10, "weight": 1.5 }
+
+###
+GET http://localhost:8080/api/subjects/1/grades/summary
+
+###
+GET http://localhost:8080/api/semesters/1/gpa
