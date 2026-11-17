@@ -23,12 +23,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,6 +54,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.sudosleep.data.local.entity.GradeEntity
 import com.example.sudosleep.data.local.pojo.SubjectWithDetails
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -68,7 +73,9 @@ fun SubjectDetailScreen(
     val themeColor = parseHexColor(subject.colorHex)
 
     var showAddGradeDialog by remember { mutableStateOf(false) }
+    var showOverflowMenu by remember { mutableStateOf(false) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+    var gradePendingDelete by remember { mutableStateOf<GradeEntity?>(null) }
 
     if (showAddGradeDialog) {
         AddGradeDialog(
@@ -85,7 +92,12 @@ fun SubjectDetailScreen(
         AlertDialog(
             onDismissRequest = { showDeleteConfirmDialog = false },
             title = { Text("Delete ${subject.name}?") },
-            text = { Text("Are you sure you want to delete this subject and all its grades and schedule entries? This action cannot be undone.") },
+            text = {
+                Text(
+                    "Are you sure you want to permanently delete this subject, all of its recorded grades, " +
+                        "and its scheduled timetable classes? This action cannot be undone."
+                )
+            },
             confirmButton = {
                 Button(
                     onClick = {
@@ -93,16 +105,43 @@ fun SubjectDetailScreen(
                         onDeleteSubject(subject.id)
                         onBack()
                     },
-                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("Delete")
+                    Text("Delete Subject Permanently")
                 }
             },
             dismissButton = {
                 OutlinedButton(onClick = { showDeleteConfirmDialog = false }) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (gradePendingDelete != null) {
+        val g = gradePendingDelete!!
+        AlertDialog(
+            onDismissRequest = { gradePendingDelete = null },
+            title = { Text("Remove Grade (${g.value})?") },
+            text = { Text("This grade entry (weight ${g.weight}) will be removed from ${subject.name}.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDeleteGrade(g.id)
+                        gradePendingDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Remove Grade")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { gradePendingDelete = null }) {
+                    Text("Keep Grade")
                 }
             }
         )
@@ -133,12 +172,38 @@ fun SubjectDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showDeleteConfirmDialog = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete Subject",
-                            tint = MaterialTheme.colorScheme.error
-                        )
+                    Box {
+                        IconButton(onClick = { showOverflowMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Subject Options"
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showOverflowMenu,
+                            onDismissRequest = { showOverflowMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = "Delete Subject…",
+                                        color = MaterialTheme.colorScheme.error,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.DeleteForever,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    showDeleteConfirmDialog = true
+                                }
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -156,7 +221,6 @@ fun SubjectDetailScreen(
         ) {
             item {
                 Spacer(modifier = Modifier.height(4.dp))
-                // Grade Average Summary Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
@@ -194,7 +258,7 @@ fun SubjectDetailScreen(
                         Button(
                             onClick = { showAddGradeDialog = true },
                             shape = RoundedCornerShape(12.dp),
-                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            colors = ButtonDefaults.buttonColors(
                                 containerColor = themeColor
                             )
                         ) {
@@ -251,17 +315,11 @@ fun SubjectDetailScreen(
             }
 
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Gradebook History",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                Text(
+                    text = "Gradebook History",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             if (grades.isEmpty()) {
@@ -288,7 +346,8 @@ fun SubjectDetailScreen(
                     }
                 }
             } else {
-                items(grades) { grade ->
+                items(grades, key = { it.id }) { grade ->
+                    var gradeMenuExpanded by remember { mutableStateOf(false) }
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
@@ -315,12 +374,38 @@ fun SubjectDetailScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                            IconButton(onClick = { onDeleteGrade(grade.id) }) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = "Delete Grade",
-                                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
-                                )
+                            Box {
+                                IconButton(onClick = { gradeMenuExpanded = true }) {
+                                    Icon(
+                                        Icons.Default.MoreVert,
+                                        contentDescription = "Grade Options",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = gradeMenuExpanded,
+                                    onDismissRequest = { gradeMenuExpanded = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                "Remove Grade…",
+                                                color = MaterialTheme.colorScheme.error
+                                            )
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Default.DeleteForever,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        },
+                                        onClick = {
+                                            gradeMenuExpanded = false
+                                            gradePendingDelete = grade
+                                        }
+                                    )
+                                }
                             }
                         }
                     }

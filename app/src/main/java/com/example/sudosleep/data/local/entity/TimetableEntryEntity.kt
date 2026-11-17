@@ -35,5 +35,17 @@ data class TimetableEntryEntity(
     val startHour: Int, // 8 to 21
     val duration: Int, // 1 to 4 hours
     val room: String? = null,
-    val teacher: String? = null
-)
+    val teacher: String? = null,
+    val notes: String? = null,
+    val canceledWeekEpochId: Int? = null, // e.g. 202646 when canceled for that specific ISO year-week
+    val notificationsEnabled: Boolean = true,
+    val reminderOffsetsCsv: String = "15" // comma-separated minutes before start, e.g. "15,60"
+) {
+    fun getReminderOffsetsMinutes(): List<Int> {
+        if (reminderOffsetsCsv.isBlank()) return emptyList()
+        return reminderOffsetsCsv.split(",")
+            .mapNotNull { it.trim().toIntOrNull() }
+            .distinct()
+            .sorted()
+    }
+}

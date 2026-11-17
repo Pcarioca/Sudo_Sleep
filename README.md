@@ -1,61 +1,63 @@
-# Sudo Sleep - Timetable & Academic Planner 🎓📅
+# Sudo Sleep - Cozy Timetable & Academic Planner 🎓📅💤
 
-**Sudo Sleep** is a modern, offline-first Material Design 3 Android application built for university students, pupils, and educators. It provides seamless management of course subjects, weighted gradebook calculations, an interactive hourly timetable grid, and real-time scheduling conflict detection.
+**Sudo Sleep** is a modern, offline-first Material Design 3 Android application built for university students, pupils, and educators. It combines an interactive multi-view timetable (Day, Week, Month), weighted gradebook tracking, exam & deadline countdowns, smart multi-reminder notifications, and one-tap phone wallpaper / PDF schedule exports in a smooth, "cute", and pleasurable UI.
 
 ---
 
-## ✨ Features
+## ✨ Key Features
 
-### 📖 Subject & Gradebook Management
-- **Custom Color-Coded Subjects**: Create and manage subjects with custom color coding (palette of 10 vibrant/pastel colors).
-- **Activity Requirements**: Define required components per subject (Lecture, Laboratory, Seminar, Practical Work, or Custom Types).
-- **Weighted Gradebook**: Track grades with customizable weights and automatically calculate arithmetic and weighted grade averages in real time.
-- **Semester GPA**: View overall semester average score across all enrolled subjects.
+### 🗓️ Interactive Multi-View Timetable (Day, Week & Month)
+- **Direct Tap-to-Add on Schedule Grid**: Tap any empty slot on the `08:00–22:00` canvas in Day or Week view to immediately schedule a class, quick activity, or exam pre-filled with that exact day and hour.
+- **Pinch-to-Zoom & Fluid Swipes**: Pinch vertically with two fingers to dynamically scale the hourly grid (fit the whole day on one screen or zoom in for full room/instructor details) and swipe left/right between days.
+- **Day, Week & Month Switcher**:
+  - **Day View**: Proportional color-coded cards, live current-time indicator line, and a *"Next up today"* countdown banner.
+  - **Week View**: Compact 7-day bird's-eye grid with week navigation and direct tap-to-add.
+  - **Month View**: Interactive monthly calendar highlighting exam dates (`🎯`) and daily recurring class dots with a selected-date agenda.
+- **"Canceled This Week Only"**: Pause a class for the current week without deleting it from your recurring schedule—renders dimmed with a strikethrough badge and automatically mutes reminders until next week.
 
-### 🗓️ Interactive Weekly Timetable Grid
-- **08:00 – 22:00 Canvas Grid**: Displays an hourly canvas across all 7 days of the week (Monday – Sunday).
-- **Proportional Activity Blocks**: Scheduled classes render as duration-scaled, color-coded event cards displaying course name, activity type badge, location/room, and instructor information.
-- **Unscheduled Activity Detector**: Top warning banner alerts you of pending subject requirements with quick-action scheduling options.
+### 🎯 Exams, Midterms & Deadlines Tracker
+- **Date-Specific Academic Events**: Schedule Exams, Midterms, Project Deadlines, Quizzes, and Custom Events linked to subjects or standalone.
+- **Countdown Radar**: Live *"Days left"* badges on the Exam Radar banner, Month View calendar, and Exam cards.
 
-### ⚡ Smart Overlap Conflict Detection
-- **Conflict Validation**: When placing an activity onto the schedule, Sudo Sleep checks for time overlaps using the formula: `newStart < existingEnd && newEnd > existingStart`.
-- **Warning Override**: Interactive alert warning dialog alerts you to time slot collisions while allowing you to force-schedule or cancel.
+### 🔔 Smart Local Notifications & Multiple Reminders
+- **Multiple Reminders per Activity/Exam**: Attach multiple reminder chips (`5m`, `10m`, `15m`, `30m`, `1h`, `2h`, `1 day before`) to any class or exam.
+- **Global & Per-Item Controls**: Toggle notifications globally or per individual class/exam, plus a **Send Test Notification Now** button in Settings.
 
-### 📱 Material Design 3 Polish
-- Modern, clean UX with rounded containers, soft elevations, generous whitespace, and fluid touch interactions.
-- Dynamic color themes (Light and Dark modes) with full Edge-to-Edge display support.
+### 🖼️ Phone Wallpaper (PNG) & Print-Ready PDF Export
+- **Lock-Screen Ready PNG Wallpaper**: Generates crisp `1080×2400` HD schedule wallpapers with customizable aesthetic styles (*Cozy Pastel*, *Midnight Dark*, *Matcha Cream*), optional lock-screen clock clearance, gallery save (`MediaStore.Images`), and one-tap **Set as Phone Wallpaper**.
+- **A4 Landscape PDF Export**: Native `PdfDocument` exporter saves print-ready weekly timetables directly to `Downloads/SudoSleep` with instant share/print actions.
+
+### 📖 Subject & Weighted Gradebook Management
+- **Custom Color-Coded Subjects**: Choose from 12 vibrant & pastel subject colors and define required course components (Lecture, Laboratory, Seminar, Practical Work, or Custom).
+- **Real-Time Weighted Averages & Semester GPA**: Automatically calculates subject averages and overall semester GPA.
+- **Safe Deletion UX**: Delete actions for classes, exams, subjects, and grades are tucked inside Edit / 3-dot overflow menus with confirmation dialogs to prevent accidental deletions.
+
+### 🌸 Cute Themes, Frontend Auth & Interactive Tutorial
+- **6 Aesthetic Color Themes**: *Pastel Dream*, *Matcha Mint*, *Sakura Blossom*, *Ocean Breeze*, *Sunset Peach*, and *Dynamic Material You* (with System, Light, and Cozy Dark modes).
+- **Welcome Login Screen**: Clean Email/Username & Password login + *Continue with Google* (decoupled via `AuthManager` for future backend integration).
+- **Interactive Coach-Mark Tutorial**: Skippable 4-step spotlight walkthrough on first install (and replayable anytime from the Hamburger menu).
+- **Polished Navigation & Back-Stack**: Slide-out Hamburger Navigation Drawer (`ModalNavigationDrawer`) and smart system back-gesture handling (`BackHandler`).
 
 ---
 
 ## 🛠️ Architecture & Tech Stack
 
 - **Language**: Kotlin
-- **UI Framework**: Jetpack Compose with Material Design 3
-- **Local Persistence**: Room Database with Kotlin Coroutines and StateFlow
-- **Architecture**: Modern Android Architecture (`ViewModel`, `Repository`, DAOs, Entities, POJOs)
-- **Min SDK**: 29 (Android 10+)
-- **Compile SDK**: 37
-
----
-
-## 🚀 Future Updates & Roadmap
-
-- [ ] **Notifications & Class Reminders**: Configurable push notifications 10–15 minutes before scheduled classes begin.
-- [ ] **Export & Import Schedule**: Backup and restore timetables as JSON or export to standard iCalendar (`.ics`) format.
-- [ ] **Home Screen Widget**: Compact launcher widget showing today's remaining classes and upcoming lectures.
-- [ ] **Assignment & Exam Countdown Tracker**: Dedicated section for tracking upcoming homework deadlines, project submissions, and exam dates.
-- [ ] **Multi-Semester Support**: Archive past terms and manage multiple academic semesters simultaneously.
+- **UI Framework**: Jetpack Compose (Material Design 3, `HorizontalPager`, `ModalNavigationDrawer`, `ModalBottomSheet`, multi-touch `pointerInput`)
+- **Local Persistence**: Room Database (v2) + `SharedPreferences` state flows
+- **Notifications & Export**: `AlarmManager`, `NotificationChannel`, Android `Canvas` & `PdfDocument`, `WallpaperManager`, `MediaStore`
+- **Architecture**: MVVM (`ViewModel`, `SudoSleepRepository`, DAOs, Entities, relational POJOs)
+- **Min SDK**: 29 (Android 10+) • **Compile SDK**: 37
 
 ---
 
 ## 💻 Getting Started
 
-1. Open Android Studio.
-2. Open the project folder (`SudoSleep`).
-3. Sync Gradle dependencies and build the project (`./gradlew assembleDebug`).
-4. Run on an Android emulator or connected device running Android 10+ (API 29+).
+1. Open the project folder (`SudoSleep`) in **Android Studio**.
+2. Sync Gradle dependencies and run `./gradlew :app:assembleDebug`.
+3. Launch on an Android emulator or physical device (API 29+).
 
 ---
 
 ## 📄 License
-Created for students and teachers. Designed with ❤️ using Jetpack Compose and Material Design 3.
+Designed and built with ❤️ using Jetpack Compose and Material Design 3.
