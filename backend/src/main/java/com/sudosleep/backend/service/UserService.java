@@ -1,5 +1,6 @@
 package com.sudosleep.backend.service;
 
+import com.sudosleep.backend.dto.UserProfileUpdateRequest;
 import com.sudosleep.backend.dto.UserRequest;
 import com.sudosleep.backend.dto.UserResponse;
 import com.sudosleep.backend.entity.User;
@@ -24,22 +25,34 @@ public class UserService {
         this.mapper = mapper;
     }
 
-    public UserResponse get(Long id) {
+    public UserResponse get(Long id, Long currentUserId) {
+        OwnershipGuard.requireOwner(id, currentUserId);
         return mapper.toResponse(find(id));
     }
 
     @Transactional
-    public UserResponse create(UserRequest request) {
-        String email = normalizeEmail(request.email());
-        if (users.existsByEmail(email)) {
-            throw new ConflictException("Email already registered: " + email);
+    public UserResponse updateProfile(Long currentUserId, UserProfileUpdateRequest request) {
+        User user = find(currentUserId);
+        user.setDisplayName(request.displayName().trim());
+        if (request.email() != null && !request.email().isBlank()) {
+            String email = normalizeEmail(request.email());
+            if (users.existsByEmailAndIdNot(email, currentUserId)) {
+                throw new ConflictException("Email already registered: " + email);
+            }
+            user.setEmail(email);
         }
-        User user = users.save(new User(email, request.displayName().trim()));
+        if (request.hasCompletedOnboarding() != null) {
+            user.setHasCompletedOnboarding(request.hasCompletedOnboarding());
+        }
+        if (request.defaultReminderOffsetsCsv() != null) {
+            user.setDefaultReminderOffsetsCsv(request.defaultReminderOffsetsCsv().trim());
+        }
         return mapper.toResponse(user);
     }
 
     @Transactional
-    public UserResponse update(Long id, UserRequest request) {
+    public UserResponse update(Long id, Long currentUserId, UserRequest request) {
+        OwnershipGuard.requireOwner(id, currentUserId);
         User user = find(id);
         String email = normalizeEmail(request.email());
         if (users.existsByEmailAndIdNot(email, id)) {
@@ -50,9 +63,10 @@ public class UserService {
         return mapper.toResponse(user);
     }
 
-    /** Deletes the user; semesters, subjects, grades and timetable are removed by the database (ON DELETE CASCADE). */
+    /** Deletes the user; semesters, subjects, grades, events and timetable are removed by the database (ON DELETE CASCADE). */
     @Transactional
-    public void delete(Long id) {
+    public void delete(Long id, Long currentUserId) {
+        OwnershipGuard.requireOwner(id, currentUserId);
         users.delete(find(id));
     }
 

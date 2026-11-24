@@ -1,8 +1,8 @@
 package com.sudosleep.backend.entity;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.EnumType;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -34,6 +34,8 @@ import java.time.LocalTime;
         + " and week_from >= 1 and week_to >= week_from"
         + " and week_parity in ('ALL','ODD','EVEN')")
 public class TimetableEntry {
+
+    public static final String DEFAULT_REMINDER_OFFSETS = "15";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -72,6 +74,15 @@ public class TimetableEntry {
 
     @Column(length = 150)
     private String teacher;
+
+    @Column(length = 500)
+    private String notes;
+
+    @Column(name = "notifications_enabled", nullable = false)
+    private boolean notificationsEnabled = true;
+
+    @Column(name = "reminder_offsets_csv", nullable = false, length = 64)
+    private String reminderOffsetsCsv = DEFAULT_REMINDER_OFFSETS;
 
     protected TimetableEntry() {
         // required by JPA
@@ -151,5 +162,29 @@ public class TimetableEntry {
 
     public void setTeacher(String teacher) {
         this.teacher = teacher;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    public boolean isNotificationsEnabled() {
+        return notificationsEnabled;
+    }
+
+    public void setNotificationsEnabled(boolean notificationsEnabled) {
+        this.notificationsEnabled = notificationsEnabled;
+    }
+
+    public String getReminderOffsetsCsv() {
+        return reminderOffsetsCsv;
+    }
+
+    public void setReminderOffsetsCsv(String reminderOffsetsCsv) {
+        this.reminderOffsetsCsv = reminderOffsetsCsv;
     }
 }

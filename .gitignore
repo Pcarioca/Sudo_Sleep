@@ -1,2 +1,16 @@
+# OS junk
 .DS_Store
 Thumbs.db
+
+# Secrets & local machine configs (keep *.example templates tracked)
+.env
+.env.*
+!.env.example
+local.properties
+
+# Stray root build/Gradle/IDE caches
+/.gradle/
+/build/
+/.kotlin/
+/app/build/
+/.idea/

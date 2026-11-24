@@ -17,5 +17,9 @@ public record TimetableEntryRequest(
         @Min(1) @Schema(description = "Last week of the activity; defaults to the last week of the semester", example = "10") Integer weekTo,
         @Schema(description = "ALL, ODD or EVEN weeks inside the range; defaults to ALL") WeekParity weekParity,
         @Size(max = 100) String room,
-        @Size(max = 150) String teacher) {
+        @Size(max = 150) String teacher,
+        @Size(max = 500) String notes,
+        @Schema(description = "Whether reminders are enabled for this entry; defaults to true") Boolean notificationsEnabled,
+        @Size(max = 64) @Schema(description = "Comma-separated reminder offsets in minutes before start", example = "15,60")
+        String reminderOffsetsCsv) {
 }

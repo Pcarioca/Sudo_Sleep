@@ -4,8 +4,9 @@ import com.sudosleep.backend.entity.ActivityType;
 import com.sudosleep.backend.entity.WeekParity;
 
 import java.time.LocalTime;
+import java.util.List;
 
-/** A timetable slot with the subject data the grid needs (name, color, activity type). */
+/** A timetable slot with the subject data, reminders, and single-week cancellations the grid needs. */
 public record TimetableEntryResponse(
         Long id,
         Long requirementId,
@@ -21,5 +22,9 @@ public record TimetableEntryResponse(
         int weekTo,
         WeekParity weekParity,
         String room,
-        String teacher) {
+        String teacher,
+        String notes,
+        boolean notificationsEnabled,
+        String reminderOffsetsCsv,
+        List<Integer> canceledIsoWeeks) {
 }

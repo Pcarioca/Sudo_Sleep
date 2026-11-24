@@ -2,11 +2,13 @@ package com.sudosleep.backend.controller;
 
 import com.sudosleep.backend.dto.TimetableEntryRequest;
 import com.sudosleep.backend.dto.TimetableEntryResponse;
+import com.sudosleep.backend.security.AuthenticatedUser;
 import com.sudosleep.backend.service.TimetableService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,8 +37,9 @@ public class TimetableController {
     @Operation(summary = "Timetable of a semester; pass week=N to get only what happens in week N")
     public List<TimetableEntryResponse> list(
             @PathVariable("semesterId") Long semesterId,
-            @RequestParam(name = "week", required = false) Integer week) {
-        return service.listForSemester(semesterId, week);
+            @RequestParam(name = "week", required = false) Integer week,
+            @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        return service.listForSemester(semesterId, week, currentUser.id());
     }
 
     @PostMapping("/semesters/{semesterId}/timetable/conflicts")
@@ -44,8 +47,10 @@ public class TimetableController {
     public List<TimetableEntryResponse> previewConflicts(
             @PathVariable("semesterId") Long semesterId,
             @RequestParam(name = "excludeEntryId", required = false) Long excludeEntryId,
-            @Valid @RequestBody TimetableEntryRequest request) {
-        return service.previewConflicts(semesterId, request, excludeEntryId);
+            @RequestParam(name = "isoYearWeek", required = false) Integer isoYearWeek,
+            @Valid @RequestBody TimetableEntryRequest request,
+            @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        return service.previewConflicts(semesterId, currentUser.id(), request, excludeEntryId, isoYearWeek);
     }
 
     @PostMapping("/requirements/{requirementId}/timetable-entries")
@@ -55,14 +60,17 @@ public class TimetableController {
     public TimetableEntryResponse create(
             @PathVariable("requirementId") Long requirementId,
             @RequestParam(name = "force", defaultValue = "false") boolean force,
-            @Valid @RequestBody TimetableEntryRequest request) {
-        return service.create(requirementId, request, force);
+            @Valid @RequestBody TimetableEntryRequest request,
+            @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        return service.create(requirementId, currentUser.id(), request, force);
     }
 
     @GetMapping("/timetable-entries/{id}")
     @Operation(summary = "Get a timetable entry")
-    public TimetableEntryResponse get(@PathVariable("id") Long id) {
-        return service.get(id);
+    public TimetableEntryResponse get(
+            @PathVariable("id") Long id,
+            @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        return service.get(id, currentUser.id());
     }
 
     @PutMapping("/timetable-entries/{id}")
@@ -70,14 +78,35 @@ public class TimetableController {
     public TimetableEntryResponse update(
             @PathVariable("id") Long id,
             @RequestParam(name = "force", defaultValue = "false") boolean force,
-            @Valid @RequestBody TimetableEntryRequest request) {
-        return service.update(id, request, force);
+            @Valid @RequestBody TimetableEntryRequest request,
+            @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        return service.update(id, currentUser.id(), request, force);
     }
 
     @DeleteMapping("/timetable-entries/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Remove an entry from the timetable (the activity becomes unscheduled again)")
-    public void delete(@PathVariable("id") Long id) {
-        service.delete(id);
+    public void delete(
+            @PathVariable("id") Long id,
+            @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        service.delete(id, currentUser.id());
+    }
+
+    @PutMapping("/timetable-entries/{id}/cancellations/{isoYearWeek}")
+    @Operation(summary = "Mark a recurring timetable entry as canceled for a single ISO year-week (e.g. 202648)")
+    public TimetableEntryResponse cancelForWeek(
+            @PathVariable("id") Long id,
+            @PathVariable("isoYearWeek") int isoYearWeek,
+            @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        return service.cancelForWeek(id, isoYearWeek, currentUser.id());
+    }
+
+    @DeleteMapping("/timetable-entries/{id}/cancellations/{isoYearWeek}")
+    @Operation(summary = "Restore a recurring timetable entry for a single ISO year-week")
+    public TimetableEntryResponse uncancelForWeek(
+            @PathVariable("id") Long id,
+            @PathVariable("isoYearWeek") int isoYearWeek,
+            @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        return service.uncancelForWeek(id, isoYearWeek, currentUser.id());
     }
 }

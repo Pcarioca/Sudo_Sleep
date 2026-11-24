@@ -21,12 +21,6 @@ class SubjectViewModel(private val repository: SudoSleepRepository) : ViewModel(
             initialValue = emptyList()
         )
 
-    init {
-        viewModelScope.launch {
-            repository.seedInitialDataIfEmpty()
-        }
-    }
-
     fun addSubject(
         name: String,
         colorHex: String,

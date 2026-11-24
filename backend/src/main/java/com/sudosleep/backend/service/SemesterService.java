@@ -53,7 +53,8 @@ public class SemesterService {
         this.clock = clock;
     }
 
-    public List<SemesterResponse> listForUser(Long userId) {
+    public List<SemesterResponse> listForUser(Long userId, Long currentUserId) {
+        OwnershipGuard.requireOwner(userId, currentUserId);
         if (!users.existsById(userId)) {
             throw new ResourceNotFoundException("User", userId);
         }
@@ -62,12 +63,13 @@ public class SemesterService {
                 .toList();
     }
 
-    public SemesterResponse get(Long id) {
-        return toResponse(find(id));
+    public SemesterResponse get(Long id, Long currentUserId) {
+        return toResponse(findOwned(id, currentUserId));
     }
 
     @Transactional
-    public SemesterResponse create(Long userId, SemesterRequest request) {
+    public SemesterResponse create(Long userId, Long currentUserId, SemesterRequest request) {
+        OwnershipGuard.requireOwner(userId, currentUserId);
         User user = users.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User", userId));
         int weeksCount = request.weeksCount() != null ? request.weeksCount() : DEFAULT_WEEKS_COUNT;
         requireMonday(request.startDate());
@@ -77,8 +79,8 @@ public class SemesterService {
     }
 
     @Transactional
-    public SemesterResponse update(Long id, SemesterRequest request) {
-        Semester semester = find(id);
+    public SemesterResponse update(Long id, Long currentUserId, SemesterRequest request) {
+        Semester semester = findOwned(id, currentUserId);
         int weeksCount = request.weeksCount() != null ? request.weeksCount() : semester.getWeeksCount();
         requireMonday(request.startDate());
         if (weeksCount < semester.getWeeksCount()
@@ -92,17 +94,15 @@ public class SemesterService {
         return toResponse(semester);
     }
 
-    /** Deletes the semester; its subjects, grades and timetable are removed by the database. */
+    /** Deletes the semester; its subjects, grades, events and timetable are removed by the database. */
     @Transactional
-    public void delete(Long id) {
-        semesters.delete(find(id));
+    public void delete(Long id, Long currentUserId) {
+        semesters.delete(findOwned(id, currentUserId));
     }
 
     /** Semester GPA = average of the weighted averages of the subjects that have grades. */
-    public SemesterGpaResponse gpa(Long semesterId) {
-        if (!semesters.existsById(semesterId)) {
-            throw new ResourceNotFoundException("Semester", semesterId);
-        }
+    public SemesterGpaResponse gpa(Long semesterId, Long currentUserId) {
+        findOwned(semesterId, currentUserId);
         Map<Long, List<Grade>> bySubject = new LinkedHashMap<>();
         for (Grade grade : grades.findBySubjectSemesterId(semesterId)) {
             bySubject.computeIfAbsent(grade.getSubject().getId(), key -> new ArrayList<>()).add(grade);
@@ -112,8 +112,11 @@ public class SemesterService {
         return new SemesterGpaResponse(semesterId, gradesPerSubject.size(), gpa);
     }
 
-    private Semester find(Long id) {
-        return semesters.findById(id).orElseThrow(() -> new ResourceNotFoundException("Semester", id));
+    private Semester findOwned(Long id, Long currentUserId) {
+        Semester semester = semesters.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Semester", id));
+        OwnershipGuard.requireOwner(semester.getUser().getId(), currentUserId);
+        return semester;
     }
 
     private SemesterResponse toResponse(Semester semester) {

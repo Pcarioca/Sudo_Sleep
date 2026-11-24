@@ -24,6 +24,11 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     // Bean Validation (@Valid, @NotBlank, ...)
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    // Spring Security + JOSE/JWT (HS256 access/refresh tokens + Google JWKS ID token verification)
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.security:spring-security-oauth2-jose'
+    // SMTP email delivery for forgot-password reset codes
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
     // Swagger UI + OpenAPI docs (springdoc 3.x is the line for Spring Boot 4)
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1'
 
@@ -31,6 +36,7 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testImplementation 'org.springframework.security:spring-security-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 

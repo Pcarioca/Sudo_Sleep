@@ -1,9 +1,31 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.devtools.ksp)
     alias(libs.plugins.jetbrains.kotlin.plugin.serialization)
 }
+
+val localProps = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) {
+        file.inputStream().use { load(it) }
+    }
+}
+
+fun localProp(key: String, defaultValue: String): String {
+    val value = localProps.getProperty(key)?.trim()
+    return if (value.isNullOrEmpty()) defaultValue else value
+}
+
+fun quoteForBuildConfig(value: String): String {
+    val escaped = value.replace("\\", "\\\\").replace("\"", "\\\"")
+    return "\"$escaped\""
+}
+
+val rawApiBaseUrl = localProp("API_BASE_URL", "http://10.0.2.2:8080/")
+val normalizedApiBaseUrl = if (rawApiBaseUrl.endsWith("/")) rawApiBaseUrl else "$rawApiBaseUrl/"
 
 android {
     namespace = "com.example.sudosleep"
@@ -17,6 +39,23 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "API_BASE_URL", quoteForBuildConfig(normalizedApiBaseUrl))
+        buildConfigField(
+            "String",
+            "GOOGLE_WEB_CLIENT_ID",
+            quoteForBuildConfig(localProp("GOOGLE_WEB_CLIENT_ID", ""))
+        )
+        buildConfigField(
+            "String",
+            "FACEBOOK_APP_ID",
+            quoteForBuildConfig(localProp("FACEBOOK_APP_ID", ""))
+        )
+        buildConfigField(
+            "String",
+            "FACEBOOK_CLIENT_TOKEN",
+            quoteForBuildConfig(localProp("FACEBOOK_CLIENT_TOKEN", ""))
+        )
     }
 
     buildTypes {
@@ -32,6 +71,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -53,6 +93,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -64,6 +106,8 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.coil.compose)
     implementation(libs.converter.moshi)
+    implementation(libs.facebook.login)
+    implementation(libs.googleid)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.core)

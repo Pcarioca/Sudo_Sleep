@@ -27,6 +27,9 @@ interface GradeDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertGrade(grade: GradeEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(grades: List<GradeEntity>)
+
     @Update
     suspend fun updateGrade(grade: GradeEntity)
 
@@ -35,4 +38,7 @@ interface GradeDao {
 
     @Query("DELETE FROM grades WHERE id = :id")
     suspend fun deleteGradeById(id: Long)
+
+    @Query("DELETE FROM grades")
+    suspend fun deleteAll()
 }

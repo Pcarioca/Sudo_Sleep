@@ -86,10 +86,14 @@ fun AddGradeDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val value = gradeValueText.toDoubleOrNull()
-                    val weight = gradeWeightText.toDoubleOrNull() ?: 1.0
-                    if (value == null || value < 0.0 || value > 10.0) {
-                        errorMsg = "Please enter a valid grade between 0 and 10"
+                    val value = gradeValueText.replace(",", ".").toDoubleOrNull()
+                    val weight = gradeWeightText.replace(",", ".").toDoubleOrNull() ?: 1.0
+                    if (value == null || value < 1.0 || value > 10.0) {
+                        errorMsg = "Please enter a valid grade between 1.0 and 10.0"
+                        return@Button
+                    }
+                    if (weight <= 0.0 || weight > 999.99) {
+                        errorMsg = "Please enter a positive weight (e.g. 1.0 or 2.0)"
                         return@Button
                     }
                     onAddGrade(value, weight)

@@ -4,6 +4,7 @@ import com.sudosleep.backend.dto.ActivityRequirementRequest;
 import com.sudosleep.backend.dto.ActivityRequirementResponse;
 import com.sudosleep.backend.dto.UnscheduledRequirementResponse;
 import com.sudosleep.backend.entity.ActivityRequirement;
+import com.sudosleep.backend.entity.Semester;
 import com.sudosleep.backend.entity.Subject;
 import com.sudosleep.backend.exception.ResourceNotFoundException;
 import com.sudosleep.backend.mapper.ActivityRequirementMapper;
@@ -40,10 +41,8 @@ public class ActivityRequirementService {
         this.mapper = mapper;
     }
 
-    public List<ActivityRequirementResponse> listForSubject(Long subjectId) {
-        if (!subjects.existsById(subjectId)) {
-            throw new ResourceNotFoundException("Subject", subjectId);
-        }
+    public List<ActivityRequirementResponse> listForSubject(Long subjectId, Long currentUserId) {
+        findOwnedSubject(subjectId, currentUserId);
         Set<Long> scheduledIds = new HashSet<>(entries.findScheduledRequirementIdsBySubjectIds(List.of(subjectId)));
         return requirements.findBySubjectIdOrderByIdAsc(subjectId).stream()
                 .map(r -> mapper.toResponse(r, scheduledIds.contains(r.getId())))
@@ -51,19 +50,18 @@ public class ActivityRequirementService {
     }
 
     /** Requirements of the semester that are not placed in the timetable yet. */
-    public List<UnscheduledRequirementResponse> listUnscheduled(Long semesterId) {
-        if (!semesters.existsById(semesterId)) {
-            throw new ResourceNotFoundException("Semester", semesterId);
-        }
+    public List<UnscheduledRequirementResponse> listUnscheduled(Long semesterId, Long currentUserId) {
+        Semester semester = semesters.findById(semesterId)
+                .orElseThrow(() -> new ResourceNotFoundException("Semester", semesterId));
+        OwnershipGuard.requireOwner(semester.getUser().getId(), currentUserId);
         return requirements.findUnscheduledBySemesterId(semesterId).stream()
                 .map(mapper::toUnscheduledResponse)
                 .toList();
     }
 
     @Transactional
-    public ActivityRequirementResponse add(Long subjectId, ActivityRequirementRequest request) {
-        Subject subject = subjects.findById(subjectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Subject", subjectId));
+    public ActivityRequirementResponse add(Long subjectId, Long currentUserId, ActivityRequirementRequest request) {
+        Subject subject = findOwnedSubject(subjectId, currentUserId);
         String customName = RequirementRules.customNameFor(request);
         ActivityRequirement saved = requirements.save(
                 new ActivityRequirement(subject, request.activityType(), customName));
@@ -71,8 +69,8 @@ public class ActivityRequirementService {
     }
 
     @Transactional
-    public ActivityRequirementResponse update(Long id, ActivityRequirementRequest request) {
-        ActivityRequirement requirement = find(id);
+    public ActivityRequirementResponse update(Long id, Long currentUserId, ActivityRequirementRequest request) {
+        ActivityRequirement requirement = findOwned(id, currentUserId);
         String customName = RequirementRules.customNameFor(request);
         requirement.setActivityType(request.activityType());
         requirement.setCustomTypeName(customName);
@@ -81,11 +79,21 @@ public class ActivityRequirementService {
 
     /** Deletes the requirement and, through the database cascade, its timetable entries. */
     @Transactional
-    public void delete(Long id) {
-        requirements.delete(find(id));
+    public void delete(Long id, Long currentUserId) {
+        requirements.delete(findOwned(id, currentUserId));
     }
 
-    private ActivityRequirement find(Long id) {
-        return requirements.findById(id).orElseThrow(() -> new ResourceNotFoundException("Requirement", id));
+    private Subject findOwnedSubject(Long subjectId, Long currentUserId) {
+        Subject subject = subjects.findById(subjectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Subject", subjectId));
+        OwnershipGuard.requireOwner(subject.getSemester().getUser().getId(), currentUserId);
+        return subject;
+    }
+
+    private ActivityRequirement findOwned(Long id, Long currentUserId) {
+        ActivityRequirement requirement = requirements.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Requirement", id));
+        OwnershipGuard.requireOwner(requirement.getSubject().getSemester().getUser().getId(), currentUserId);
+        return requirement;
     }
 }

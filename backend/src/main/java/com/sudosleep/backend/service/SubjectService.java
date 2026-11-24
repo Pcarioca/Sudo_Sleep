@@ -57,22 +57,19 @@ public class SubjectService {
         this.requirementMapper = requirementMapper;
     }
 
-    public List<SubjectResponse> listForSemester(Long semesterId) {
-        if (!semesters.existsById(semesterId)) {
-            throw new ResourceNotFoundException("Semester", semesterId);
-        }
+    public List<SubjectResponse> listForSemester(Long semesterId, Long currentUserId) {
+        findOwnedSemester(semesterId, currentUserId);
         return toResponses(subjects.findBySemesterIdOrderByNameAsc(semesterId));
     }
 
-    public SubjectResponse get(Long id) {
-        return toResponses(List.of(find(id))).get(0);
+    public SubjectResponse get(Long id, Long currentUserId) {
+        return toResponses(List.of(findOwned(id, currentUserId))).get(0);
     }
 
     /** Creates a subject together with the activities it requires (lecture, laboratory, ...). */
     @Transactional
-    public SubjectResponse create(Long semesterId, SubjectRequest request) {
-        Semester semester = semesters.findById(semesterId)
-                .orElseThrow(() -> new ResourceNotFoundException("Semester", semesterId));
+    public SubjectResponse create(Long semesterId, Long currentUserId, SubjectRequest request) {
+        Semester semester = findOwnedSemester(semesterId, currentUserId);
         String name = request.name().trim();
         if (subjects.existsBySemesterIdAndNameIgnoreCase(semesterId, name)) {
             throw new ConflictException("This semester already has a subject named '" + name + "'");
@@ -92,8 +89,8 @@ public class SubjectService {
     }
 
     @Transactional
-    public SubjectResponse update(Long id, SubjectUpdateRequest request) {
-        Subject subject = find(id);
+    public SubjectResponse update(Long id, Long currentUserId, SubjectUpdateRequest request) {
+        Subject subject = findOwned(id, currentUserId);
         String name = request.name().trim();
         if (subjects.existsBySemesterIdAndNameIgnoreCaseAndIdNot(subject.getSemester().getId(), name, id)) {
             throw new ConflictException("This semester already has a subject named '" + name + "'");
@@ -105,12 +102,22 @@ public class SubjectService {
 
     /** Deletes the subject; its requirements, grades and timetable entries are removed by the database. */
     @Transactional
-    public void delete(Long id) {
-        subjects.delete(find(id));
+    public void delete(Long id, Long currentUserId) {
+        subjects.delete(findOwned(id, currentUserId));
     }
 
-    private Subject find(Long id) {
-        return subjects.findById(id).orElseThrow(() -> new ResourceNotFoundException("Subject", id));
+    private Semester findOwnedSemester(Long semesterId, Long currentUserId) {
+        Semester semester = semesters.findById(semesterId)
+                .orElseThrow(() -> new ResourceNotFoundException("Semester", semesterId));
+        OwnershipGuard.requireOwner(semester.getUser().getId(), currentUserId);
+        return semester;
+    }
+
+    private Subject findOwned(Long id, Long currentUserId) {
+        Subject subject = subjects.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Subject", id));
+        OwnershipGuard.requireOwner(subject.getSemester().getUser().getId(), currentUserId);
+        return subject;
     }
 
     private static String normalizeColor(String colorHex) {

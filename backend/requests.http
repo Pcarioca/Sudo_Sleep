@@ -1,19 +1,50 @@
-### Fresh database: ids below assume the first user/semester/subject/requirements are 1, 2, ...
-
-### 1. Create a user
-POST http://localhost:8080/api/users
+### End-to-end authenticated API smoke test (IntelliJ HTTP Client)
+### 1. Register a user (auto-creates a default Monday semester and returns JWT tokens)
+POST http://localhost:8080/api/auth/register
 Content-Type: application/json
 
-{ "email": "adi@example.com", "displayName": "Adi" }
+{
+  "displayName": "Adi",
+  "email": "adi@example.com",
+  "password": "Password123!"
+}
 
-### 2. Create a semester (startDate must be a Monday)
-POST http://localhost:8080/api/users/1/semesters
+> {%
+    client.global.set("accessToken", response.body.accessToken);
+    client.global.set("refreshToken", response.body.refreshToken);
+    client.global.set("semesterId", response.body.activeSemesterId);
+%}
+
+### 2. Fetch & update my profile
+GET http://localhost:8080/api/users/me
+Authorization: Bearer {{accessToken}}
+
+###
+PUT http://localhost:8080/api/users/me
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
-{ "name": "2026/27 Sem 1", "startDate": "2026-10-05", "weeksCount": 14 }
+{
+  "displayName": "Adi Popescu",
+  "hasCompletedOnboarding": true,
+  "defaultReminderOffsetsCsv": "15,60"
+}
 
-### 3. Create a subject with its required activities
-POST http://localhost:8080/api/semesters/1/subjects
+### 3. Refresh access token
+POST http://localhost:8080/api/auth/refresh
+Content-Type: application/json
+
+{ "refreshToken": "{{refreshToken}}" }
+
+### 4. Forgot password (dev mode logs 6-digit code if MAIL_HOST is blank)
+POST http://localhost:8080/api/auth/forgot-password
+Content-Type: application/json
+
+{ "email": "adi@example.com" }
+
+### 5. Create a subject with its required activities
+POST http://localhost:8080/api/semesters/{{semesterId}}/subjects
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
@@ -26,50 +57,112 @@ Content-Type: application/json
   ]
 }
 
-### 4. Unscheduled activities (the banner)
-GET http://localhost:8080/api/semesters/1/requirements/unscheduled
+> {%
+    client.global.set("subjectId", response.body.id);
+    client.global.set("lectureReqId", response.body.requirements[0].id);
+    client.global.set("labReqId", response.body.requirements[1].id);
+    client.global.set("projectReqId", response.body.requirements[2].id);
+%}
 
-### 5. Schedule the lecture: Monday 08-10, weeks 1-10
-POST http://localhost:8080/api/requirements/1/timetable-entries
+### 6. Unscheduled activities (the banner)
+GET http://localhost:8080/api/semesters/{{semesterId}}/requirements/unscheduled
+Authorization: Bearer {{accessToken}}
+
+### 7. Schedule the lecture: Monday 08-10, weeks 1-10, with notes & reminders
+POST http://localhost:8080/api/requirements/{{lectureReqId}}/timetable-entries
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
-{ "dayOfWeek": 1, "startTime": "08:00", "endTime": "10:00", "weekFrom": 1, "weekTo": 10, "room": "A101", "teacher": "Prof. Turing" }
+{
+  "dayOfWeek": 1,
+  "startTime": "08:00",
+  "endTime": "10:00",
+  "weekFrom": 1,
+  "weekTo": 10,
+  "room": "A101",
+  "teacher": "Prof. Turing",
+  "notes": "Bring laptop for live demo",
+  "notificationsEnabled": true,
+  "reminderOffsetsCsv": "15,60"
+}
 
-### 6. Laboratory on odd weeks, Monday 10-12
-POST http://localhost:8080/api/requirements/2/timetable-entries
+> {%
+    client.global.set("lectureEntryId", response.body.id);
+%}
+
+### 8. Mark the lecture as "Canceled this week only" (ISO year-week 202648)
+PUT http://localhost:8080/api/timetable-entries/{{lectureEntryId}}/cancellations/202648
+Authorization: Bearer {{accessToken}}
+
+### 9. Restore the lecture for week 202648
+DELETE http://localhost:8080/api/timetable-entries/{{lectureEntryId}}/cancellations/202648
+Authorization: Bearer {{accessToken}}
+
+### 10. Laboratory on odd weeks, Monday 10-12
+POST http://localhost:8080/api/requirements/{{labReqId}}/timetable-entries
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 { "dayOfWeek": 1, "startTime": "10:00", "endTime": "12:00", "weekParity": "ODD", "room": "Lab 302" }
 
-### 7. Overlaps the lecture in weeks 1-10 -> 409 with "conflicts"
-POST http://localhost:8080/api/requirements/3/timetable-entries
+### 11. Overlaps the lecture in weeks 1-10 -> 409 with "conflicts"
+POST http://localhost:8080/api/requirements/{{projectReqId}}/timetable-entries
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 { "dayOfWeek": 1, "startTime": "09:00", "endTime": "11:00" }
 
-### 8. Same request, forced
-POST http://localhost:8080/api/requirements/3/timetable-entries?force=true
+### 12. Same request, forced
+POST http://localhost:8080/api/requirements/{{projectReqId}}/timetable-entries?force=true
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 { "dayOfWeek": 1, "startTime": "09:00", "endTime": "11:00" }
 
-### 9. What happens in week 2 (odd lab is hidden)
-GET http://localhost:8080/api/semesters/1/timetable?week=2
+### 13. What happens in week 2 (odd lab is hidden)
+GET http://localhost:8080/api/semesters/{{semesterId}}/timetable?week=2
+Authorization: Bearer {{accessToken}}
 
-### 10. Grades and averages
-POST http://localhost:8080/api/subjects/1/grades
+### 14. Create an Exam / Academic Event linked to the subject
+POST http://localhost:8080/api/semesters/{{semesterId}}/events
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "subjectId": {{subjectId}},
+  "title": "Mobile Systems Midterm",
+  "eventType": "MIDTERM",
+  "eventDate": "2026-11-18",
+  "startTime": "10:00",
+  "endTime": "12:00",
+  "room": "Aula A1",
+  "notes": "Chapters 1-5",
+  "notificationsEnabled": true,
+  "reminderOffsetsCsv": "15,60,1440"
+}
+
+### 15. List Academic Events for the semester
+GET http://localhost:8080/api/semesters/{{semesterId}}/events
+Authorization: Bearer {{accessToken}}
+
+### 16. Grades and averages
+POST http://localhost:8080/api/subjects/{{subjectId}}/grades
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 { "score": 9.5, "weight": 1 }
 
 ###
-POST http://localhost:8080/api/subjects/1/grades
+POST http://localhost:8080/api/subjects/{{subjectId}}/grades
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 { "score": 10, "weight": 1.5 }
 
 ###
-GET http://localhost:8080/api/subjects/1/grades/summary
+GET http://localhost:8080/api/subjects/{{subjectId}}/grades/summary
+Authorization: Bearer {{accessToken}}
 
 ###
-GET http://localhost:8080/api/semesters/1/gpa
+GET http://localhost:8080/api/semesters/{{semesterId}}/gpa
+Authorization: Bearer {{accessToken}}

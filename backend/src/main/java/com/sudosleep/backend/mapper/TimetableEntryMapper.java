@@ -6,10 +6,12 @@ import com.sudosleep.backend.entity.Subject;
 import com.sudosleep.backend.entity.TimetableEntry;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public class TimetableEntryMapper {
 
-    public TimetableEntryResponse toResponse(TimetableEntry entry) {
+    public TimetableEntryResponse toResponse(TimetableEntry entry, List<Integer> canceledIsoWeeks) {
         ActivityRequirement requirement = entry.getRequirement();
         Subject subject = requirement.getSubject();
         return new TimetableEntryResponse(
@@ -27,6 +29,10 @@ public class TimetableEntryMapper {
                 entry.getWeekTo(),
                 entry.getWeekParity(),
                 entry.getRoom(),
-                entry.getTeacher());
+                entry.getTeacher(),
+                entry.getNotes(),
+                entry.isNotificationsEnabled(),
+                entry.getReminderOffsetsCsv(),
+                canceledIsoWeeks == null ? List.of() : List.copyOf(canceledIsoWeeks));
     }
 }

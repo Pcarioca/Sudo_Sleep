@@ -33,6 +33,9 @@ interface RequirementDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRequirement(requirement: ActivityRequirementEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(requirements: List<ActivityRequirementEntity>)
+
     @Update
     suspend fun updateRequirement(requirement: ActivityRequirementEntity)
 
@@ -41,4 +44,7 @@ interface RequirementDao {
 
     @Query("UPDATE activity_requirements SET isScheduled = :isScheduled WHERE id = :id")
     suspend fun updateScheduledStatus(id: Long, isScheduled: Boolean)
+
+    @Query("DELETE FROM activity_requirements")
+    suspend fun deleteAll()
 }

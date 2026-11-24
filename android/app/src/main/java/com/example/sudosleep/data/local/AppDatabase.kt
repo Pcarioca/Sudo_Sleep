@@ -4,10 +4,12 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.example.sudosleep.data.local.dao.AcademicEventDao
 import com.example.sudosleep.data.local.dao.GradeDao
 import com.example.sudosleep.data.local.dao.RequirementDao
 import com.example.sudosleep.data.local.dao.SubjectDao
 import com.example.sudosleep.data.local.dao.TimetableDao
+import com.example.sudosleep.data.local.entity.AcademicEventEntity
 import com.example.sudosleep.data.local.entity.ActivityRequirementEntity
 import com.example.sudosleep.data.local.entity.GradeEntity
 import com.example.sudosleep.data.local.entity.SubjectEntity
@@ -18,9 +20,10 @@ import com.example.sudosleep.data.local.entity.TimetableEntryEntity
         SubjectEntity::class,
         ActivityRequirementEntity::class,
         TimetableEntryEntity::class,
-        GradeEntity::class
+        GradeEntity::class,
+        AcademicEventEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -29,6 +32,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun requirementDao(): RequirementDao
     abstract fun timetableDao(): TimetableDao
     abstract fun gradeDao(): GradeDao
+    abstract fun academicEventDao(): AcademicEventDao
 
     companion object {
         @Volatile
@@ -41,7 +45,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "sudosleep_database"
                 )
-                    .fallbackToDestructiveMigration()
+                    .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
                 INSTANCE = instance
                 instance

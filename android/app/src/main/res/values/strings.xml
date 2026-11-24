@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">Sudo Sleep</string>
+
+    <!-- Google Sign-In (Credential Manager): Web application OAuth 2.0 Client ID from Google Cloud Console -->
+    <string name="default_web_client_id" translatable="false">YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com</string>
+
+    <!-- Facebook Login SDK: Replace with your values from Meta for Developers -> App Settings -->
+    <string name="facebook_app_id" translatable="false">YOUR_FACEBOOK_APP_ID</string>
+    <string name="facebook_client_token" translatable="false">YOUR_FACEBOOK_CLIENT_TOKEN</string>
+    <string name="fb_login_protocol_scheme" translatable="false">fbYOUR_FACEBOOK_APP_ID</string>
 </resources>

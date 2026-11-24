@@ -3,11 +3,13 @@ package com.sudosleep.backend.controller;
 import com.sudosleep.backend.dto.ActivityRequirementRequest;
 import com.sudosleep.backend.dto.ActivityRequirementResponse;
 import com.sudosleep.backend.dto.UnscheduledRequirementResponse;
+import com.sudosleep.backend.security.AuthenticatedUser;
 import com.sudosleep.backend.service.ActivityRequirementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,35 +35,40 @@ public class ActivityRequirementController {
 
     @GetMapping("/subjects/{subjectId}/requirements")
     @Operation(summary = "List the activities a subject requires (lecture, laboratory, ...)")
-    public List<ActivityRequirementResponse> list(@PathVariable("subjectId") Long subjectId) {
-        return service.listForSubject(subjectId);
+    public List<ActivityRequirementResponse> list(@PathVariable("subjectId") Long subjectId,
+                                                  @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        return service.listForSubject(subjectId, currentUser.id());
     }
 
     @PostMapping("/subjects/{subjectId}/requirements")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Add a required activity to a subject")
     public ActivityRequirementResponse add(@PathVariable("subjectId") Long subjectId,
-                                           @Valid @RequestBody ActivityRequirementRequest request) {
-        return service.add(subjectId, request);
+                                           @Valid @RequestBody ActivityRequirementRequest request,
+                                           @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        return service.add(subjectId, currentUser.id(), request);
     }
 
     @PutMapping("/requirements/{id}")
     @Operation(summary = "Change the type of a required activity")
     public ActivityRequirementResponse update(@PathVariable("id") Long id,
-                                              @Valid @RequestBody ActivityRequirementRequest request) {
-        return service.update(id, request);
+                                              @Valid @RequestBody ActivityRequirementRequest request,
+                                              @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        return service.update(id, currentUser.id(), request);
     }
 
     @DeleteMapping("/requirements/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete a required activity and its timetable entries")
-    public void delete(@PathVariable("id") Long id) {
-        service.delete(id);
+    public void delete(@PathVariable("id") Long id,
+                       @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        service.delete(id, currentUser.id());
     }
 
     @GetMapping("/semesters/{semesterId}/requirements/unscheduled")
     @Operation(summary = "Activities of the semester that are not in the timetable yet (the warning banner)")
-    public List<UnscheduledRequirementResponse> unscheduled(@PathVariable("semesterId") Long semesterId) {
-        return service.listUnscheduled(semesterId);
+    public List<UnscheduledRequirementResponse> unscheduled(@PathVariable("semesterId") Long semesterId,
+                                                            @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        return service.listUnscheduled(semesterId, currentUser.id());
     }
 }

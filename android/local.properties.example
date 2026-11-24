@@ -1,0 +1,21 @@
+# ==============================================================================
+# Sudo Sleep Android — Local Configuration Template
+# Copy/merge these properties into `android/local.properties` (gitignored).
+# NEVER commit real tokens or local SDK paths to version control.
+# ==============================================================================
+
+# Path to your Android SDK (auto-populated by Android Studio)
+sdk.dir=/path/to/Android/Sdk
+
+# Backend REST API base URL:
+# - Android Emulator talking to host localhost:8080  -> http://10.0.2.2:8080/
+# - Physical device on same LAN as backend           -> http://<YOUR_PC_LAN_IP>:8080/
+API_BASE_URL=http://10.0.2.2:8080/
+
+# Google Sign-In ("Web application" OAuth 2.0 Client ID from Google Cloud Console)
+GOOGLE_WEB_CLIENT_ID=your-google-web-client-id.apps.googleusercontent.com
+
+# Facebook Login (Meta for Developers -> App Settings -> Basic & Advanced)
+# Note: NEVER put FACEBOOK_APP_SECRET in the Android app!
+FACEBOOK_APP_ID=your-facebook-app-id
+FACEBOOK_CLIENT_TOKEN=your-facebook-client-token

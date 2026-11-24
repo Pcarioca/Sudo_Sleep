@@ -34,6 +34,9 @@ interface SubjectDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSubject(subject: SubjectEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(subjects: List<SubjectEntity>)
+
     @Update
     suspend fun updateSubject(subject: SubjectEntity)
 
@@ -42,4 +45,7 @@ interface SubjectDao {
 
     @Query("DELETE FROM subjects WHERE id = :id")
     suspend fun deleteSubjectById(id: Long)
+
+    @Query("DELETE FROM subjects")
+    suspend fun deleteAll()
 }
